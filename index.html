@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winxdle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE occasion: a playful fandom guessing game, bright but tidy
+   IDEA an Alfea student's enchanted guessing board, sparkle-dusted and pink like the show's packaging
+   PICTURE the board itself: a row of glowing tiles per guess, each guess with a hair-colour orb
+   COLOUR hot pink ground field, deep berry ink, turquoise accent; green / amber / rose tiles
+   TYPE Fredoka (rounded, magical-girl friendly) + Nunito
+   LAYOUT title and mode switch on top, search box, then the board full width; on phones each guess is a 4x2 tile card */
+:root{color-scheme:light dark;--bg:light-dark(#ffe6f3,#1b0816);--band:light-dark(#ff3d9a,#7a0f4f);--ink:light-dark(#3b0b2c,#ffe9f5);--soft:light-dark(#fff7fb,#2a0d22);--line:light-dark(#f4b6d6,#4d1a3d);--mute:light-dark(#8a4a72,#d49bbd);--acc:light-dark(#00a9b0,#3fe0e6);--ok:#18a564;--part:#f5a524;--no:light-dark(#d64561,#b8334f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Nunito,system-ui,sans-serif;overflow-x:clip}
+.band{padding-block:clamp(20px,3vw,40px);padding-left:max(5vw,16px);padding-right:max(5vw,16px)}
+.top{background:var(--band);color:#fff;position:relative;overflow:hidden}
+.top svg.dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wrap{max-width:1100px;margin:0 auto;position:relative}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px}
+h1{font:700 clamp(40px,7vw,64px)/1.05 Fredoka,system-ui,sans-serif;margin:0;letter-spacing:-.02em;display:flex;align-items:center;gap:12px}
+h1 svg{width:clamp(40px,6vw,58px);height:auto;flex:none}
+.sub{margin:6px 0 0;font-size:17px;max-width:56ch;color:#fff}
+.modes{display:flex;gap:6px;background:rgba(0,0,0,.18);padding:5px;border-radius:999px}
+.modes button{font:600 16px Fredoka,sans-serif;border:0;border-radius:999px;padding:10px 18px;min-height:44px;background:transparent;color:#fff;cursor:pointer}
+.modes button[aria-pressed=true]{background:#fff;color:#a0115f}
+.modes button:focus-visible,.btn:focus-visible,#q:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.find{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.box{position:relative;flex:1 1 320px;max-width:520px}
+#q{width:100%;font:600 18px Nunito,sans-serif;padding:14px 18px;border-radius:16px;border:3px solid #fff;background:#fff;color:#3b0b2c;min-height:52px}
+#q:disabled{opacity:.7}
+.list{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--soft);color:var(--ink);border:2px solid var(--line);border-radius:16px;margin:0;padding:6px;list-style:none;z-index:5;max-height:320px;overflow:auto;box-shadow:0 12px 30px rgba(60,0,40,.25)}
+.list li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;min-height:44px}
+.list li[aria-selected=true],.list li:hover{background:color-mix(in srgb,var(--band) 18%,transparent)}
+.list small{color:var(--mute);margin-left:auto;font-size:13px}
+.stat{font:600 16px Fredoka,sans-serif;color:#fff;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn{font:600 16px Fredoka,sans-serif;border:2px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:9px 16px;min-height:44px;cursor:pointer}
+.btn.fill{background:var(--acc);border-color:var(--acc);color:#05262a}
+.btn:disabled{opacity:.45;cursor:default}
+.clues{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.clue{background:rgba(255,255,255,.18);border-radius:12px;padding:8px 14px;font-weight:600}
+.board{max-width:1100px;margin:0 auto}
+.row{display:grid;grid-template-columns:1.25fr repeat(7,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.hdr .t{background:none;color:var(--mute);font:600 14px Fredoka,sans-serif;min-height:0;padding:0 4px 2px;box-shadow:none;border:0}
+.t{border-radius:14px;min-height:76px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:15px;line-height:1.2;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.14),inset 0 2px 0 rgba(255,255,255,.25)}
+.t .l{display:none;font:600 13px Fredoka,sans-serif;opacity:.9;font-weight:600}
+.t.ok{background:var(--ok)}.t.part{background:var(--part);color:#3a2400}.t.no{background:var(--no)}
+.t.nm{background:var(--soft);color:var(--ink);border:2px solid var(--line);flex-direction:row;gap:10px;justify-content:flex-start;padding-inline:10px;text-align:left;box-shadow:none;font:600 17px Fredoka,sans-serif}
+.orb{width:30px;height:30px;border-radius:50%;flex:none;border:2px solid var(--line);display:grid;place-items:center;font:700 14px Fredoka,sans-serif;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.arr{font-size:13px;opacity:.95;white-space:nowrap}
+.new .t:not(.nm){animation:flip .5s both}
+.new .t:nth-child(3){animation-delay:.07s}.new .t:nth-child(4){animation-delay:.14s}.new .t:nth-child(5){animation-delay:.21s}.new .t:nth-child(6){animation-delay:.28s}.new .t:nth-child(7){animation-delay:.35s}.new .t:nth-child(8){animation-delay:.42s}
+@keyframes flip{from{transform:rotateX(90deg);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.new .t{animation:none!important}}
+.empty{border:2px dashed var(--line);border-radius:18px;padding:22px;text-align:center;color:var(--mute);font-weight:600}
+.win{background:var(--soft);border:3px solid var(--ok);border-radius:20px;padding:20px 22px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.win.lost{border-color:var(--no)}
+.win h2{font:700 28px/1.1 Fredoka,sans-serif;margin:0}
+.win p{margin:4px 0 0}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mute);font-weight:600;margin:0 auto 14px;max-width:1100px;font-size:15px}
+.legend i{display:inline-block;width:16px;height:16px;border-radius:5px;vertical-align:-3px;margin-right:6px}
+.foot{max-width:1100px;margin:0 auto}
+details{background:var(--soft);border:2px solid var(--line);border-radius:16px;padding:12px 18px;margin-bottom:12px}
+summary{font:600 18px Fredoka,sans-serif;cursor:pointer;min-height:32px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:999px;padding:4px 12px 4px 4px;font-weight:600}
+.chip .orb{width:24px;height:24px;font-size:12px}
+.chip.used{opacity:.4}
+details p,details li{max-width:70ch}
+@media(max-width:700px){
+.hdr{display:none}
+.row{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;background:color-mix(in srgb,var(--line) 35%,transparent);padding:6px;border-radius:18px;margin-bottom:10px}
+.t{min-height:64px;font-size:14px}
+.t .l{display:block}
+.t.nm{font-size:15px;padding-inline:6px;gap:6px}
+.orb{width:24px;height:24px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<header class="top band">
+<svg class="dust" aria-hidden="true" id="dust"></svg>
+<div class="wrap">
+<div class="head">
+<div>
+<h1><svg viewBox="0 0 64 56" aria-hidden="true"><path d="M32 30C22 8 4 2 3 14c-1 9 12 15 29 16z" fill="#bff7f8" stroke="#fff" stroke-width="2"/><path d="M32 30C42 8 60 2 61 14c1 9-12 15-29 16z" fill="#bff7f8" stroke="#fff" stroke-width="2"/><path d="M32 31c-12 2-22 9-19 17 3 6 13 0 19-17z" fill="#ffd1ea" stroke="#fff" stroke-width="2"/><path d="M32 31c12 2 22 9 19 17-3 6-13 0-19-17z" fill="#ffd1ea" stroke="#fff" stroke-width="2"/><circle cx="32" cy="30" r="4" fill="#fff"/></svg>Winxdle</h1>
+<p class="sub">Guess the Winx Club character. Every guess shows which details match the mystery character.</p>
+</div>
+<div class="modes" role="group" aria-label="Game mode">
+<button id="mDaily" aria-pressed="true">Daily</button>
+<button id="mEndless" aria-pressed="false">Endless</button>
+</div>
+</div>
+<div class="find">
+<div class="box">
+<input id="q" type="text" autocomplete="off" placeholder="Type a character… e.g. Stella" aria-label="Guess a character" role="combobox" aria-expanded="false" aria-controls="list">
+<ul class="list" id="list" role="listbox" hidden></ul>
+</div>
+<div class="stat"><span id="count">Guess 1</span><span id="dayl"></span><button class="btn" id="reset">Restart</button></div>
+</div>
+<div class="clues" id="clues"></div>
+</div>
+</header>
+
+<main class="band">
+<div class="legend"><span><i style="background:var(--ok)"></i>Match</span><span><i style="background:var(--part)"></i>Partly right</span><span><i style="background:var(--no)"></i>Wrong</span><span>▲ ▼ the mystery character debuted later / earlier (films sit between seasons)</span></div>
+<div class="board">
+<div id="result"></div>
+<div class="row hdr" aria-hidden="true"><div class="t">Character</div><div class="t">Gender</div><div class="t">Affinity</div><div class="t">Group</div><div class="t">School</div><div class="t">Home realm</div><div class="t">Hair</div><div class="t">Debut</div></div>
+<div id="rows"></div>
+</div>
+</main>
+
+<section class="band" style="padding-top:0">
+<div class="foot">
+<details>
+<summary>How to play</summary>
+<ul>
+<li>Type any character from the list and press Enter. You have unlimited guesses, but fewer is better.</li>
+<li><b>Partly right</b> (amber) means some of it matches: Bloom's home realm is Domino <i>and</i> Earth, so guessing her when the answer is from Earth gives amber.</li>
+<li><b>Affinity</b> has three levels. <b>Evil</b> is for the main villains (the Trix, Darkar, Valtor, the Black Circle, Tritannus and so on). <b>Bad</b> is for lesser troublemakers like Mitzi, Diaspro and Amentia. Everyone else is <b>Good</b>. Bad and Evil count as partly right for each other.</li>
+<li><b>Debut</b> counts the first two films as half-seasons: Film 1 sits between seasons 3 and 4, Film 2 between seasons 4 and 5.</li>
+<li>Typing a main character's name also suggests the lesser-known people tied to them. Type <b>Bloom</b> and you'll see her parents, her adoptive parents, Kiko and Mitzi.</li>
+<li>After 4 guesses you can reveal the character's power or role. After 7 you can reveal their first letter.</li>
+<li><b>Daily</b> gives everyone the same character each day (it changes at midnight). <b>Endless</b> lets you play as many rounds as you want.</li>
+</ul>
+</details>
+<details>
+<summary>Who's in the game (<span id="n"></span> characters)</summary>
+<div class="chips" id="chips"></div>
+</details>
+</div>
+</section>
+
+<script>
+{
+const RF="Red Fountain",CT="Cloud Tower",LC="Linphea College";
+const C=[
+// name, gender, affinity, group, school[], home[], hair[], debut (S number; 3.5 = film 1, 4.5 = film 2), clue
+["Bloom","Female","Good","Winx",["Alfea"],["Domino","Earth"],["Red","Orange"],1,"Fairy of the Dragon's Flame"],
+["Stella","Female","Good","Winx",["Alfea"],["Solaria"],["Blonde"],1,"Fairy of the Shining Sun and Moon"],
+["Flora","Female","Good","Winx",["Alfea"],["Linphea"],["Brown","Blonde"],1,"Fairy of Nature"],
+["Musa","Female","Good","Winx",["Alfea"],["Melody"],["Black","Blue"],1,"Fairy of Music"],
+["Tecna","Female","Good","Winx",["Alfea"],["Zenith"],["Pink","Purple"],1,"Fairy of Technology"],
+["Aisha","Female","Good","Winx",["Alfea"],["Andros"],["Brown"],2,"Fairy of Waves, controls Morphix"],
+["Roxy","Female","Good","Winx",["None"],["Earth"],["Pink","Purple"],4,"Fairy of Animals, the last fairy on Earth"],
+["Sky","Male","Good","Specialists",[RF],["Eraklyon"],["Blonde"],1,"Prince of Eraklyon, Bloom's boyfriend"],
+["Brandon","Male","Good","Specialists",[RF],["Unknown"],["Brown"],1,"Sky's squire, Stella's boyfriend"],
+["Riven","Male","Good","Specialists",[RF],["Unknown"],["Pink","Purple"],1,"Hot-headed Specialist, Musa's boyfriend"],
+["Timmy","Male","Good","Specialists",[RF],["Magix"],["Orange","Brown"],1,"Gadget genius, Tecna's boyfriend"],
+["Helia","Male","Good","Specialists",[RF],["Unknown"],["Black","Blue"],2,"Poet and artist, Flora's boyfriend"],
+["Nabu","Male","Good","Specialists",["None"],["Andros"],["Brown","Red"],3,"Wizard with a magic staff, Aisha's fiancé"],
+["Roy","Male","Good","Specialists",[RF],["Andros"],["Blonde"],5,"Specialist working for Aisha's father"],
+["Thoren","Male","Good","Paladins",[LC],["Unknown"],["Brown"],6,"Paladin, Sky's cousin and Daphne's husband"],
+["Nex","Male","Good","Paladins",[LC],["Unknown"],["Blue","Grey"],6,"Paladin who becomes Aisha's boyfriend"],
+["Faragonda","Female","Good","School staff",["Alfea"],["Magix"],["White","Blue"],1,"Headmistress of Alfea"],
+["Griselda","Female","Good","School staff",["Alfea"],["Magix"],["Brown"],1,"Alfea's strict Head of Discipline"],
+["Palladium","Male","Good","School staff",["Alfea"],["Magix"],["Orange","Blonde"],1,"Elf who teaches Potionology"],
+["Wizgiz","Male","Good","School staff",["Alfea"],["Magix"],["Brown"],1,"Leprechaun who teaches Shapeshifting"],
+["Avalon","Male","Good","School staff",["Alfea"],["Unknown"],["Blue","Grey"],2,"Alfea teacher and Paladin"],
+["Knut","Male","Good","School staff",[CT,"Alfea"],["Magix"],["None"],1,"Ogre who ends up as Alfea's janitor"],
+["Griffin","Female","Good","School staff",[CT],["Magix"],["Purple"],1,"Headmistress of Cloud Tower"],
+["Saladin","Male","Good","School staff",[RF],["Magix"],["Grey"],1,"Headmaster of Red Fountain"],
+["Codatorta","Male","Good","School staff",[RF],["Magix"],["Brown"],1,"Red Fountain vice-principal"],
+["Daphne","Female","Good","Royals",["Alfea"],["Domino"],["Blonde"],1,"Bloom's older sister, a Nymph of Magix"],
+["Oritel","Male","Good","Royals",["None"],["Domino"],["Brown"],3.5,"King of Domino, Bloom's father"],
+["Marion","Female","Good","Royals",["None"],["Domino"],["Red"],3.5,"Queen of Domino, Bloom's mother"],
+["Radius","Male","Good","Royals",["None"],["Solaria"],["Orange"],3,"King of Solaria, Stella's father"],
+["Erendor","Male","Good","Royals",["None"],["Eraklyon"],["Brown"],4.5,"King of Eraklyon, Sky's father"],
+["Samara","Female","Good","Royals",["None"],["Eraklyon"],["Red"],1,"Queen of Eraklyon, Sky's mother"],
+["Ligea","Female","Good","Royals",["None"],["Andros"],["Green"],3,"Queen of the merpeople of Andros"],
+["Neptune","Male","Good","Royals",["None"],["Andros"],["White"],5,"King of the seas of Andros"],
+["Nereus","Male","Good","Royals",["None"],["Andros"],["Purple"],5,"Crown prince of the seas, Tritannus's twin"],
+["Krystal","Female","Good","Royals",["Alfea"],["Linphea"],["Purple"],5,"Princess of Linphea, Helia's childhood friend"],
+["Galatea","Female","Good","Royals",["Alfea"],["Melody"],["Blonde"],3,"Princess of Melody"],
+["Mike","Male","Good","Family",["None"],["Earth"],["Blonde"],1,"Bloom's adoptive dad, a firefighter"],
+["Vanessa","Female","Good","Family",["None"],["Earth"],["Brown"],1,"Bloom's adoptive mum, a florist"],
+["Ho-Boe","Male","Good","Family",["None"],["Melody"],["Grey"],2,"Musa's father, a musician"],
+["Miele","Female","Good","Family",[LC],["Linphea"],["Blonde","Orange"],3,"Flora's little sister"],
+["Morgana","Female","Good","Earth fairies",["None"],["Earth"],["Brown"],4,"Former queen of the Earth fairies, Roxy's mother"],
+["Nebula","Female","Good","Earth fairies",["None"],["Earth"],["Blue"],4,"Earth fairy who later rules Tir Na Nog"],
+["Eldora","Female","Good","Earth fairies",["Alfea"],["Earth"],["Purple","Grey"],6,"Fairy Godmother, guardian of the Legendarium"],
+["Mirta","Female","Good","Others",[CT,"Alfea"],["Magix"],["Red","Blue"],1,"Cloud Tower witch who transferred to Alfea"],
+["Mitzi","Female","Bad","Others",["None"],["Earth"],["Black"],1,"Bloom's spoiled rival from Gardenia"],
+["Kiko","Male","Good","Others",["None"],["Earth"],["None"],1,"Bloom's pet rabbit"],
+["Icy","Female","Evil","Trix",[CT],["Dyamond"],["White","Blue"],1,"Leader of the Trix, ice magic"],
+["Darcy","Female","Evil","Trix",[CT],["Unknown"],["Brown"],1,"Witch of darkness and illusions"],
+["Stormy","Female","Evil","Trix",[CT],["Unknown"],["Purple"],1,"Witch of storms and lightning"],
+["Ogron","Male","Evil","Black Circle",["None"],["Unknown"],["Red"],4,"Leader of the Wizards of the Black Circle"],
+["Duman","Male","Evil","Black Circle",["None"],["Unknown"],["Pink"],4,"Shapeshifting Black Circle wizard"],
+["Anagan","Male","Evil","Black Circle",["None"],["Unknown"],["Brown","Black"],4,"Black Circle wizard with super speed"],
+["Gantlos","Male","Evil","Black Circle",["None"],["Unknown"],["Blonde"],4,"Black Circle wizard who makes shockwaves"],
+["Diaspro","Female","Bad","Villains",["None"],["Eraklyon"],["Blonde"],1,"Fairy of Gemstones, Sky's ex-fiancée"],
+["Amentia","Female","Bad","Villains",["None"],["Downland"],["Black"],2,"Princess of Downland"],
+["Lord Darkar","Male","Evil","Villains",["None"],["Shadowhaunt"],["None"],2,"The Shadow Phoenix, who absorbs energy"],
+["Valtor","Male","Evil","Villains",["None"],["Unknown"],["Brown","Blonde"],3,"Dark wizard born from the Dragon's Flame"],
+["Mandragora","Female","Evil","Villains",["None"],["Obsidian"],["Blue","Purple"],3.5,"Witch who serves the Ancestral Witches"],
+["Tritannus","Male","Evil","Villains",["None"],["Andros"],["Purple"],5,"Merman prince mutated by pollution"],
+["Selina","Female","Evil","Villains",[CT],["Earth"],["Blonde"],6,"Keeper of the Legendarium, Witch of Snakes"],
+["Kalshara","Female","Evil","Villains",["None"],["Unknown"],["Grey"],7,"Shapeshifter villain, Brafilius's sister"]
+].map(a=>({name:a[0],gender:a[1],affinity:a[2],group:a[3],school:a[4],home:a[5],hair:a[6],debut:a[7],clue:a[8]}));
+const REL={
+"Oritel":[["Bloom","dad"],["Daphne","dad"]],"Marion":[["Bloom","mum"],["Daphne","mum"]],
+"Mike":[["Bloom","adoptive dad"]],"Vanessa":[["Bloom","adoptive mum"]],"Kiko":[["Bloom","pet rabbit"]],"Mitzi":[["Bloom","rival"]],
+"Radius":[["Stella","dad"]],
+"Ho-Boe":[["Musa","dad"]],"Galatea":[["Musa","home realm's princess"]],
+"Miele":[["Flora","little sister"]],"Krystal":[["Helia","childhood friend"],["Flora","home realm's princess"]],
+"Neptune":[["Aisha","uncle"]],"Ligea":[["Aisha","aunt"]],"Nereus":[["Aisha","cousin"]],"Tritannus":[["Aisha","cousin"]],"Roy":[["Aisha","dad's Specialist"]],
+"Morgana":[["Roxy","mum"]],"Nebula":[["Roxy","regent"]],
+"Erendor":[["Sky","dad"]],"Samara":[["Sky","mum"]],"Thoren":[["Sky","cousin"],["Daphne","husband"]],
+"Saladin":[["Helia","uncle"]]
+};
+const relLabel=(c,v)=>{const r=(REL[c.name]||[]).find(([who])=>who.toLowerCase().startsWith(v));return r?r[0]+"'s "+r[1]:""};
+const DL=d=>d===3.5?"Film 1":d===4.5?"Film 2":"S"+d;
+const HAIR={Red:"#d8362f",Orange:"#f07a1a",Blonde:"#f2cf5b",Brown:"#7a4a2a",Black:"#231a28",Blue:"#2f4fb5",Pink:"#e64aa0",Purple:"#7d3cc0",White:"#f3f3f7",Grey:"#9a9aa3",Green:"#2e8b57",None:"#c9b8c3"};
+const COLS=[["gender","Gender"],["affinity","Affinity"],["group","Group"],["school","School"],["home","Home realm"],["hair","Hair"],["debut","Debut"]];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=id=>document.getElementById(id);
+const byName=Object.fromEntries(C.map(c=>[c.name,c]));
+const orb=c=>{const h=c.hair.map(x=>HAIR[x]);const bg=h.length>1?`linear-gradient(135deg,${h[0]} 50%,${h[1]} 50%)`:h[0];return `<span class="orb" style="background:${bg}">${esc(c.name[0])}</span>`};
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
+const dailyPick=d=>C[hash("winx"+d)%C.length].name;
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+let S;
+function fresh(mode){const d=today();return mode==="daily"?{v:2,mode,day:d,answer:dailyPick(d),guesses:[],shown:[],done:false}:{v:2,mode,day:d,answer:C[Math.floor(Math.random()*C.length)].name,guesses:[],shown:[],done:false}}
+function loadDaily(){const s=store.get("winxdle-daily-v2");return s&&s.day===today()&&byName[s.answer]?s:fresh("daily")}
+function save(){if(S.mode==="daily")store.set("winxdle-daily-v2",S);else store.set("winxdle-endless-v2",S)}
+
+function cmp(g,a,k){
+ if(k==="debut"){if(g.debut===a.debut)return{c:"ok",v:DL(g.debut)};return{c:"no",v:`${DL(g.debut)} <span class="arr">${a.debut>g.debut?"▲ later":"▼ earlier"}</span>`}}
+ if(k==="affinity"&&g.affinity!==a.affinity){const bad=x=>x!=="Good";return{c:bad(g.affinity)&&bad(a.affinity)?"part":"no",v:esc(g.affinity)}}
+ const gv=[].concat(g[k]),av=[].concat(a[k]);
+ const same=gv.length===av.length&&gv.every(x=>av.includes(x));
+ const some=gv.some(x=>av.includes(x));
+ return{c:same?"ok":some?"part":"no",v:gv.map(esc).join(" / ")};
+}
+function rowHTML(name,isNew){
+ const g=byName[name],a=byName[S.answer];
+ return `<div class="row${isNew?" new":""}"><div class="t nm">${orb(g)}<span>${esc(g.name)}</span></div>${COLS.map(([k,l])=>{const r=cmp(g,a,k);return `<div class="t ${r.c}"><span class="l">${l}</span>${r.v}</div>`}).join("")}</div>`;
+}
+function emoji(name){const g=byName[name],a=byName[S.answer];return COLS.map(([k])=>({ok:"🟩",part:"🟧",no:"🟥"})[cmp(g,a,k).c]).join("")}
+let lastNew=null;
+function render(){
+ $("mDaily").setAttribute("aria-pressed",S.mode==="daily");$("mEndless").setAttribute("aria-pressed",S.mode==="endless");
+ const rows=[...S.guesses].reverse();
+ $("rows").innerHTML=rows.length?rows.map(n=>rowHTML(n,n===lastNew)).join(""):`<div class="empty">No guesses yet. Try one of the Winx to get started. There are good guys, villains, royals, parents and teachers in the mix.</div>`;
+ lastNew=null;
+ const n=S.guesses.length;
+ $("count").textContent=S.done?`Solved in ${n}`:`Guess ${n+1}`;
+ $("dayl").textContent=S.mode==="daily"?"Daily · "+S.day:"Endless round";
+ const q=$("q");q.disabled=S.done;q.placeholder=S.done?"Solved! See you tomorrow, or switch to Endless":"Type a character… e.g. Stella";
+ const a=byName[S.answer];
+ let cl="";
+ if(!S.done){
+  cl+=S.shown.includes("clue")?`<span class="clue">Clue: ${esc(a.clue)}</span>`:`<button class="btn" id="cClue" ${n<4?"disabled":""}>${n<4?`Power clue in ${4-n}`:"Reveal power clue"}</button>`;
+  cl+=S.shown.includes("letter")?`<span class="clue">Starts with “${esc(a.name[0])}”</span>`:`<button class="btn" id="cLetter" ${n<7?"disabled":""}>${n<7?`First letter in ${7-n}`:"Reveal first letter"}</button>`;
+  cl+=`<button class="btn" id="giveup">Give up</button>`;
+ }
+ $("clues").innerHTML=cl;
+ if(S.done){
+  const won=S.guesses.includes(S.answer);
+  $("result").innerHTML=`<div class="win${won?"":" lost"}"><div style="display:flex;gap:14px;align-items:center">${orb(a)}<div><h2>${won?"Magic! It was ":"It was "}${esc(a.name)}</h2><p>${esc(a.clue)}. ${won?`You got it in ${n} ${n===1?"guess":"guesses"}.`:"Better luck next round."}</p></div></div><div class="acts">${won?`<button class="btn fill" id="share">Copy result</button>`:""}<button class="btn" id="again">${S.mode==="daily"?"Play Endless":"New round"}</button></div></div>`;
+ }else $("result").innerHTML="";
+ $("n").textContent=C.length;
+ $("chips").innerHTML=[...C].sort((x,y)=>x.name.localeCompare(y.name)).map(c=>`<span class="chip${S.guesses.includes(c.name)?" used":""}">${orb(c)}${esc(c.name)}</span>`).join("");
+}
+function guess(name){
+ if(S.done||!byName[name]||S.guesses.includes(name))return;
+ S.guesses.push(name);lastNew=name;
+ if(name===S.answer)S.done=true;
+ save();render();
+}
+// autocomplete
+const q=$("q"),list=$("list");let opts=[],sel=0;
+function showList(){
+ const v=q.value.trim().toLowerCase();
+ if(!v){list.hidden=true;q.setAttribute("aria-expanded","false");return}
+ const left=C.filter(c=>!S.guesses.includes(c.name));
+ const direct=left.filter(c=>c.name.toLowerCase().includes(v)).sort((a,b)=>(a.name.toLowerCase().startsWith(v)?0:1)-(b.name.toLowerCase().startsWith(v)?0:1));
+ const linked=v.length>=3?left.filter(c=>!direct.includes(c)&&relLabel(c,v)):[];
+ opts=direct.concat(linked);
+ sel=0;
+ list.innerHTML=opts.length?opts.map((c,i)=>{const rl=linked.includes(c)?relLabel(c,v):"";return `<li role="option" id="o${i}" data-n="${esc(c.name)}" aria-selected="${i===0}">${orb(c)}${esc(c.name)}<small>${esc(rl||c.group)}</small></li>`}).join(""):`<li aria-disabled="true">No character by that name</li>`;
+ list.hidden=false;q.setAttribute("aria-expanded","true");
+}
+function pick(i){const c=opts[i];if(!c)return;q.value="";list.hidden=true;q.setAttribute("aria-expanded","false");guess(c.name);q.focus()}
+q.addEventListener("input",showList);
+q.addEventListener("keydown",e=>{
+ if(list.hidden&&e.key!=="Enter")return;
+ if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(!opts.length)return;sel=(sel+(e.key==="ArrowDown"?1:opts.length-1))%opts.length;[...list.children].forEach((li,i)=>li.setAttribute("aria-selected",i===sel));list.children[sel].scrollIntoView({block:"nearest"})}
+ else if(e.key==="Enter"){e.preventDefault();pick(sel)}
+ else if(e.key==="Escape"){list.hidden=true}
+});
+list.addEventListener("mousedown",e=>{const li=e.target.closest("li[data-n]");if(li){e.preventDefault();pick(opts.findIndex(c=>c.name===li.dataset.n))}});
+q.addEventListener("blur",()=>setTimeout(()=>{list.hidden=true},120));
+document.addEventListener("click",e=>{
+ const id=e.target.id;
+ if(id==="cClue"){S.shown.push("clue");save();render()}
+ if(id==="cLetter"){S.shown.push("letter");save();render()}
+ if(id==="reset"){S=fresh(S.mode);save();render();q.value="";q.focus()}
+ if(id==="giveup"){S.done=true;save();render()}
+ if(id==="again"){S=fresh("endless");save();render();q.focus()}
+ if(id==="mDaily"&&S.mode!=="daily"){S=loadDaily();render()}
+ if(id==="mEndless"&&S.mode!=="endless"){const s=store.get("winxdle-endless-v2");S=s&&byName[s.answer]?s:fresh("endless");render()}
+ if(id==="share"){
+  const txt=`Winxdle ${S.mode==="daily"?S.day:"(endless)"} · ${S.guesses.length} ${S.guesses.length===1?"guess":"guesses"}\n`+S.guesses.map(emoji).join("\n");
+  const b=e.target;navigator.clipboard.writeText(txt).then(()=>{b.textContent="Copied!"},()=>{b.textContent="Copy blocked"});
+ }
+});
+// sparkle dust in the header
+{const d=$("dust");let s=7;const r=()=>(s=s*16807%2147483647)/2147483647;let h="";for(let i=0;i<46;i++){const x=(r()*100).toFixed(1),y=(r()*100).toFixed(1),z=(r()*2.2+.6).toFixed(2),o=(r()*.5+.25).toFixed(2);h+=i%5?`<circle cx="${x}%" cy="${y}%" r="${z}" fill="#fff" opacity="${o}"/>`:`<g transform="translate(0,0)"><text x="${x}%" y="${y}%" fill="#fff" opacity="${o}" font-size="${(z*7).toFixed(0)}">✦</text></g>`}d.innerHTML=h}
+function start(data){S=data&&data.v===2&&data.answer&&byName[data.answer]?data:loadDaily();if(S.mode==="daily"&&S.day!==today())S=fresh("daily");render()}
+window.claude?.hot?.snapshot?.(()=>S);
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+}
+</script>
+</body>
+</html>
